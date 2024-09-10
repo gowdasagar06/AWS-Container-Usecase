@@ -1,0 +1,40 @@
+version: 0.2
+env: 
+  secrets-manager:
+    AWS_ACCESS_KEY_ID: "arn:aws:secretsmanager:ap-south-1:654654515013:secret:access-key-4bH2MR:AWS_ACCESS_KEY_ID"
+    AWS_SECRET_ACCESS_KEY: "arn:aws:secretsmanager:ap-south-1:654654515013:secret:access-key-4bH2MR:AWS_SECRET_ACCESS_KEY"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - sudo yum update -y
+      - sudo yum install -y unzip wget
+      - aws --version
+      - wget https://releases.hashicorp.com/terraform/1.0.7/terraform_1.0.7_linux_amd64.zip
+      - sudo rm -rf /usr/local/bin/terraform  # Remove existing Terraform directory
+      - sudo unzip -o terraform_1.0.7_linux_amd64.zip -d /usr/local/bin/
+      - terraform --version
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+      - export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+      - export Default_region_name="ap-south-1"
+  build:
+    commands:
+      - echo "Build started on $(date)"
+
+  post_build:
+    commands:
+      - echo "Build completed on $(date)"
+      - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+      - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+      - aws configure set region ap-south-1
+      - cd terraform
+      - terraform show plan.out
+      - terraform apply plan.out
+artifacts:
+  files:
+    - '**/*'
